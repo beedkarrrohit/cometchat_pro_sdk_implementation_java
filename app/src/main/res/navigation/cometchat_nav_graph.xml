@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cometchat_nav_graph"
+    app:startDestination="@id/conversation_fragment">
+
+    <fragment
+        android:id="@+id/conversation_fragment"
+        android:name="com.example.cometchatprojava.cometChatActivity.fragments.ConversationFragment"
+        android:label="Conversation"
+        tools:layout="@layout/fragment_conversation" />
+    <fragment
+        android:id="@+id/user_fragment"
+        android:name="com.example.cometchatprojava.cometChatActivity.fragments.UserFragment"
+        android:label="Users"
+        tools:layout="@layout/fragment_user" />
+    <fragment
+        android:id="@+id/group_fragment"
+        android:name="com.example.cometchatprojava.cometChatActivity.fragments.GroupFragment"
+        android:label="Group"
+        tools:layout="@layout/fragment_group" />
+    <fragment
+        android:id="@+id/call_fragment"
+        android:name="com.example.cometchatprojava.cometChatActivity.fragments.CallFragment"
+        android:label="Call Logs"
+        tools:layout="@layout/fragment_call" />
+    <fragment
+        android:id="@+id/profile_fragment"
+        android:name="com.example.cometchatprojava.cometChatActivity.fragments.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+</navigation>

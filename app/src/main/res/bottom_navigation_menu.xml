@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:title="conversation"
+        android:icon="@drawable/conversation"
+        android:id="@+id/conversation"/>
+    <item
+        android:title="Users"
+        android:icon="@drawable/user"
+        android:id="@+id/user"
+    />
+    <item
+        android:title="groups"
+        android:icon="@drawable/group"
+        android:id="@+id/groups"/>
+    <item
+        android:title="Calls"
+        android:id="@+id/calls"
+        android:icon="@drawable/ic_round_call_24"
+        />
+    <item
+        android:title="account"
+        android:id="@+id/profile"
+        android:icon="@drawable/ic_baseline_account_circle_24"
+        />
+</menu>

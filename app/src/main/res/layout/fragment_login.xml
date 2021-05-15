@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F1EDED"
+    tools:context=".login_activity.LoginFragment">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/logo"
+        app:layout_constraintBottom_toTopOf="@id/UID"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.4"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/login_guideline1"
+        app:layout_constraintStart_toEndOf="@id/login_guideline2"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:hint="UID"
+        app:layout_constraintVertical_bias="0.35"
+        android:id="@+id/UID"
+        >
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/uid"
+            />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/login"
+        app:layout_constraintBottom_toTopOf="@id/createuser"
+        app:layout_constraintTop_toTopOf="@id/UID"
+        app:layout_constraintEnd_toStartOf="@id/login_guideline1"
+        app:layout_constraintStart_toEndOf="@id/login_guideline2"
+        android:text="Login"
+        app:layout_constraintVertical_bias="0.3"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/createuser"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:text="Create User"
+        app:layout_constraintTop_toBottomOf="@+id/login"
+        app:layout_constraintEnd_toStartOf="@id/login_guideline1"
+        app:layout_constraintStart_toEndOf="@id/login_guideline2"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/login_guideline1"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.95"
+        />
+    <androidx.constraintlayout.widget.Guideline
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/login_guideline2"
+        app:layout_constraintGuide_percent="0.05"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
