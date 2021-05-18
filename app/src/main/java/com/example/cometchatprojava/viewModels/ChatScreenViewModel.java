@@ -67,7 +67,7 @@ public class ChatScreenViewModel extends ViewModel {
             CometChat.sendMessage(textMessage, new CometChat.CallbackListener<TextMessage>() {
                 @Override
                 public void onSuccess(TextMessage textMessage) {
-                    Log.e(TAG, "onSuccess: ");
+                    Log.e(TAG, "onSuccess: "+ textMessage);
                     addMessageToList(textMessage);
                 }
                 @Override
@@ -101,6 +101,10 @@ public class ChatScreenViewModel extends ViewModel {
             if(!baseMessage.getSender().getUid().equals(CometChat.getLoggedInUser().getUid())){
                 markAsRead(baseMessage,baseMessage.getReceiverType());
             }
+        }else{
+            List<BaseMessage> newList = new ArrayList<>();
+            newList.add(baseMessage);
+            list.setValue(newList);
         }
     }
     public void setMessageDelivery(MessageReceipt messageReceipt){
