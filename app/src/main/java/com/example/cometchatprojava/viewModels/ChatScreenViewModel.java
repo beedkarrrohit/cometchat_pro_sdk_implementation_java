@@ -30,15 +30,15 @@ public class ChatScreenViewModel extends ViewModel {
         return list;
     }
 
-    public void fetchMessages(String id,String type){
+    public void fetchMessages(String id,String type,int limit){
         Log.e(TAG, "fetMessages: called");
         MessagesRequest messagesRequest;
         if(type.equals(CometChatConstants.CONVERSATION_TYPE_USER)){
             Log.e(TAG, "fetchMessages: ifCalled");
-            messagesRequest = new MessagesRequest.MessagesRequestBuilder().setUID(id).setLimit(30).build();
+            messagesRequest = new MessagesRequest.MessagesRequestBuilder().setUID(id).setLimit(limit).build();
         }else {
             Log.e(TAG, "fetchMessages: else called");
-            messagesRequest = new MessagesRequest.MessagesRequestBuilder().setGUID(id).setLimit(30).build();
+            messagesRequest = new MessagesRequest.MessagesRequestBuilder().setGUID(id).setLimit(limit).build();
         }
         messagesRequest.fetchPrevious(new CometChat.CallbackListener<List<BaseMessage>>() {
             @Override
@@ -47,8 +47,9 @@ public class ChatScreenViewModel extends ViewModel {
                     Log.e(TAG, "onSuccess: "+baseMessages );
                     list.setValue(baseMessages);
                     BaseMessage baseMessage = baseMessages.get(baseMessages.size() -1);
-                    if(!baseMessage.getSender().getUid().equals(CometChat.getLoggedInUser().getUid()) && baseMessage.getReadByMeAt() == 0L){
-                        markAsRead(baseMessage);
+                    if(!baseMessage.getSender().getUid().equals(CometChat.getLoggedInUser().getUid()) && baseMessage.getReadAt() == 0L){
+                        Log.e(TAG, "onSuccess: Called");
+                        markAsRead(baseMessage,baseMessage.getReceiverType());
                     }
                 }
             }
@@ -97,8 +98,8 @@ public class ChatScreenViewModel extends ViewModel {
             List<BaseMessage> newList = new ArrayList<>(list.getValue());
             newList.add(baseMessage);
             list.setValue(newList);
-            if(baseMessage.getSender().getUid() != CometChat.getLoggedInUser().getUid()){
-                markAsRead(baseMessage);
+            if(!baseMessage.getSender().getUid().equals(CometChat.getLoggedInUser().getUid())){
+                markAsRead(baseMessage,baseMessage.getReceiverType());
             }
         }
     }
@@ -132,7 +133,13 @@ public class ChatScreenViewModel extends ViewModel {
         }
     }
 
-    public void markAsRead(BaseMessage baseMessage){
-        CometChat.markAsRead(baseMessage.getId(),baseMessage.getSender().getUid(),baseMessage.getReceiverType());
+    public void markAsRead(BaseMessage baseMessage,String type){
+        Log.e(TAG, "onSuccess: Called 2");
+        if(type.equals(CometChatConstants.RECEIVER_TYPE_USER)){
+            CometChat.markAsRead(baseMessage.getId(),baseMessage.getSender().getUid(),baseMessage.getReceiverType());
+        }else {
+            CometChat.markAsRead(baseMessage.getId(),baseMessage.getReceiverUid(),baseMessage.getReceiverType());
+        }
+
     }
 }

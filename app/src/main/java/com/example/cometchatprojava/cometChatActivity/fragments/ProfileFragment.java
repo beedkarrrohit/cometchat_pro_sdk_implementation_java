@@ -1,5 +1,6 @@
 package com.example.cometchatprojava.cometChatActivity.fragments;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -17,16 +18,20 @@ import com.cometchat.pro.core.CometChat;
 import com.cometchat.pro.exceptions.CometChatException;
 import com.cometchat.pro.models.User;
 import com.example.cometchatprojava.R;
+import com.example.cometchatprojava.databinding.CustomAlertDialogUserUpdateBinding;
 import com.example.cometchatprojava.databinding.FragmentProfileBinding;
+import com.example.cometchatprojava.databinding.ProfileInfoBinding;
 import com.example.cometchatprojava.login_activity.LoginActivity;
 
 
 public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
+    private ProfileInfoBinding subinding;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
         binding = FragmentProfileBinding.bind(view);
+        subinding = ProfileInfoBinding.bind(binding.getRoot());
         return view;
     }
 
@@ -52,8 +57,47 @@ public class ProfileFragment extends Fragment {
                 });
             }
         });
-        binding.layout.username.setText(user.getName());
-        binding.layout.status.setText(user.getStatus());
-        Glide.with(this).load(user.getAvatar()).placeholder(R.drawable.user).into(binding.layout.avatar);
+        subinding.username.setText(user.getName());
+        subinding.status.setText(user.getStatus());
+        subinding.profileLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                updateProfile(user.getAvatar());
+            }
+        });
+        Glide.with(this).load(user.getAvatar()).placeholder(R.drawable.user).into(subinding.avatar);
+    }
+
+    private void updateProfile(String avatar) {
+        CustomAlertDialogUserUpdateBinding dialogBinding =
+        CustomAlertDialogUserUpdateBinding.bind(LayoutInflater.from(getActivity()).inflate(R.layout.custom_alert_dialog_user_update,null));
+        AlertDialog alertDialog = new AlertDialog.Builder(getActivity(),R.style.CustomAlertDialog).setView(dialogBinding.getRoot()).create();
+        alertDialog.show();
+        Glide.with(dialogBinding.getRoot()).load(avatar).placeholder(R.drawable.user).into(dialogBinding.userAvatar);
+        dialogBinding.cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                alertDialog.dismiss();
+            }
+        });
+        dialogBinding.setName.setOnClickListener(view -> {
+            String name = dialogBinding.setNameEdt.getText().toString();
+            setName(name);
+            alertDialog.dismiss();
+        });
+    }
+    private void setName(String name){
+        User user = CometChat.getLoggedInUser();
+        user.setName(name);
+        CometChat.updateCurrentUserDetails(user, new CometChat.CallbackListener<User>() {
+            @Override
+            public void onSuccess(User user) {
+                subinding.username.setText(CometChat.getLoggedInUser().getName());
+            }
+            @Override
+            public void onError(CometChatException e) {
+
+            }
+        });
     }
 }

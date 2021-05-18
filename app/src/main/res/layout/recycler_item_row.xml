@@ -68,7 +68,35 @@
         android:layout_marginEnd="10dp"
         tools:text="time"
         app:layout_constraintVertical_bias="0.8"
-        android:visibility="visible"
+        android:visibility="gone"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/message_time"
+        app:layout_constraintEnd_toStartOf="@id/call_button"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="10dp"
+        tools:text="time"
+        app:layout_constraintVertical_bias="0.1"
+        android:visibility="gone"
+        />
+    <TextView
+        android:layout_width="25dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/message_count"
+        app:layout_constraintEnd_toStartOf="@id/call_button"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="10dp"
+        tools:text="10"
+        android:textSize="10sp"
+        android:padding="5dp"
+        android:textAlignment="center"
+        android:background="@drawable/badge"
+        app:layout_constraintVertical_bias="0.8"
+        android:visibility="gone"
         />
     <View
         android:layout_width="0dp"

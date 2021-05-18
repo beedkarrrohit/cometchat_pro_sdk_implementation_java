@@ -125,7 +125,7 @@ public class CallFragment extends Fragment implements ItemClickListener {
         View view = inflater.inflate(R.layout.call_alert_dialog_layout,null);
         CallAlertDialogLayoutBinding binding1 = CallAlertDialogLayoutBinding.bind(view);
         Glide.with(binding1.getRoot()).load(avatar).placeholder(R.drawable.user).into(binding1.avatar);
-        AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).setView(view).create();
+        AlertDialog alertDialog = new AlertDialog.Builder(getActivity(),R.style.CustomAlertDialog).setView(view).create();
         alertDialog.show();
         binding1.audioCall.setOnClickListener(new View.OnClickListener() {
             @Override

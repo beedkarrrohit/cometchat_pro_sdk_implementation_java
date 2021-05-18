@@ -2,14 +2,19 @@ package com.example.cometchatprojava.chatActivity;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.Editable;
@@ -25,6 +30,7 @@ import com.bumptech.glide.Glide;
 import com.cometchat.pro.constants.CometChatConstants;
 import com.cometchat.pro.core.CometChat;
 import com.cometchat.pro.core.CometChat.*;
+import com.cometchat.pro.exceptions.CometChatException;
 import com.cometchat.pro.models.Action;
 import com.cometchat.pro.models.BaseMessage;
 import com.cometchat.pro.models.CustomMessage;
@@ -50,7 +56,8 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ChatScreenActivity extends AppCompatActivity implements View.OnClickListener, AttachmentSheet.BottomSheetListener, TextWatcher {
+public class ChatScreenActivity extends AppCompatActivity implements View.OnClickListener, AttachmentSheet.BottomSheetListener,
+        TextWatcher, SwipeRefreshLayout.OnRefreshListener {
     private ActivityChatScreenBinding binding;
     private CreateTextMessageLayoutBinding subinding;
     private static String status;
@@ -64,6 +71,10 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
     private ChatScreenViewModel viewModel;
     private MessageAdapter adapter;
     private AttachmentSheet attachmentSheet;
+    private LinearLayoutManager linearLayoutManager;
+    private boolean isRefreshed;
+    private boolean isIncoming;
+    private boolean isScrolledRequired;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,11 +99,15 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
             binding.toolbarGroupName.setVisibility(View.VISIBLE);
             binding.toolbarGroupName.setText(name);
         }
+        linearLayoutManager = new LinearLayoutManager(this);
+        binding.swipeRefresh.setOnRefreshListener(this);
+        binding.newMessage.setOnClickListener(this);
         subinding.sendBtn.setOnClickListener(this);
         subinding.buttonAttach.setOnClickListener(this);
         subinding.edtMsg.addTextChangedListener(this);
         attachmentSheet = new AttachmentSheet();
         adapter = new MessageAdapter(new DiffUtils<>());
+        binding.chatscreenRecycler.setLayoutManager(linearLayoutManager);
         binding.chatscreenRecycler.setAdapter(adapter);
         viewModel.getList().observe(this, new Observer<List<BaseMessage>>() {
             @Override
@@ -100,11 +115,33 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
                 Log.e(TAG, "onChanged: "+baseMessages);
                 adapter.submitList(baseMessages);
                 adapter.notifyDataSetChanged();
-                if(adapter.getItemCount()>0){
-                    binding.chatscreenRecycler.scrollToPosition(adapter.getItemCount()-1);
+                Log.e(TAG, "onChanged: isRef "+ isRefreshed );
+                Log.e(TAG, "onScrollChange: before if " + isIncoming);
+                if(adapter.getItemCount()>0 && !isRefreshed && !isIncoming){
+                    Log.e(TAG, "onScrollChange: if n" + isIncoming);
+                    linearLayoutManager.smoothScrollToPosition(binding.chatscreenRecycler,null,adapter.getItemCount());
+                }else{
+                    if(isIncoming && isScrolledRequired){
+                        linearLayoutManager.smoothScrollToPosition(binding.chatscreenRecycler,null,adapter.getItemCount());
+                    }else if(isIncoming && !isScrolledRequired){
+                        binding.newMessage.setVisibility(View.VISIBLE);
+                    }
                 }
+                isRefreshed =  false;
             }
         });
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            binding.chatscreenRecycler.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+                @Override
+                public void onScrollChange(View view, int i, int i1, int i2, int i3) {
+                    if(adapter.getItemCount() - linearLayoutManager.findLastVisibleItemPosition() > 5){
+                        isScrolledRequired = false;
+                    }else{
+                       isScrolledRequired = true;
+                    }
+                }
+            });
+        }
     }
 
     private void handleIntent(){
@@ -122,19 +159,39 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.one_on_one_chat_menu,menu);
+        if(type.equals(CometChatConstants.CONVERSATION_TYPE_USER)){
+            menu.getItem(2).setVisible(false);
+        }
         return true;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if(item.getItemId() == R.id.call){
             cometChatCall(CometChatConstants.CALL_TYPE_AUDIO);
         }else if(item.getItemId() == R.id.video_call){
             cometChatCall(CometChatConstants .CALL_TYPE_VIDEO);
+        }else if(item.getItemId() == R.id.leave){
+            leaveGroup();
         }
         return true;
     }
 
+    private void leaveGroup(){
+        CometChat.leaveGroup(id, new CallbackListener<String>() {
+            @Override
+            public void onSuccess(String s) {
+                finish();
+            }
+            @Override
+            public void onError(CometChatException e) {
+                Log.e(TAG, "onError: unable to leave group "+e.getMessage());
+            }
+        });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
     private void cometChatCall(String callType) {
         String receiverType;
         if(type.equals(CometChatConstants.CONVERSATION_TYPE_USER)){
@@ -152,7 +209,7 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void fetchMessages(){
-        viewModel.fetchMessages(id,type);
+        viewModel.fetchMessages(id,type,30);
     }
     private void sendMessages(String message){
         TextMessage textMessage = new TextMessage(id,message,type);
@@ -172,7 +229,9 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
     @Override
     protected void onResume() {
         super.onResume();
-        fetchMessages();
+        if(adapter.getItemCount() == 0){
+            fetchMessages();
+        }
         getCometChatListeners();
     }
 
@@ -182,6 +241,7 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
         removeCometChatListeners();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onClick(View view) {
         int id = view.getId();
@@ -197,6 +257,10 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
                 attachmentSheet.show(getSupportFragmentManager(),TAG);
             }
 
+        }else if(id == R.id.new_message){
+            linearLayoutManager.smoothScrollToPosition(binding.chatscreenRecycler,null,adapter.getItemCount());
+            binding.newMessage.setVisibility(View.GONE);
+            isIncoming=false;
         }
     }
     private void getCometChatListeners(){
@@ -213,16 +277,19 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
         CometChat.addMessageListener(TAG,new CometChat.MessageListener(){
             @Override
             public void onTextMessageReceived(TextMessage textMessage) {
+                isIncoming = true;
                 viewModel.addMessageToList(textMessage);
             }
 
             @Override
             public void onMediaMessageReceived(MediaMessage mediaMessage) {
+                isIncoming = true;
                 viewModel.addMessageToList(mediaMessage);
             }
 
             @Override
             public void onCustomMessageReceived(CustomMessage customMessage) {
+                isIncoming = true;
                 viewModel.addMessageToList(customMessage);
             }
 
@@ -318,6 +385,7 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
         viewModel.sendMessage(mediaMessage);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -370,4 +438,13 @@ public class ChatScreenActivity extends AppCompatActivity implements View.OnClic
             }
         }
     }
+
+    @Override
+    public void onRefresh() {
+        isRefreshed = true;
+        int size = adapter.getCurrentList().size() + 30;
+        viewModel.fetchMessages(id,type,size);
+        binding.swipeRefresh.setRefreshing(false);
+    }
+
 }

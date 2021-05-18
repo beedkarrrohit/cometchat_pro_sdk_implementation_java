@@ -20,11 +20,11 @@ import com.cometchat.pro.models.TextMessage;
 import com.cometchat.pro.models.User;
 import com.example.cometchatprojava.R;
 import com.example.cometchatprojava.databinding.RecyclerItemRowBinding;
-
-import org.w3c.dom.Text;
+import com.example.cometchatprojava.utils.Helper;
 
 public class ConversationListAdapter extends ListAdapter<Conversation, ConversationListAdapter.ConversationViewHolder> {
-    private ItemClickListener itemClickListener;
+    private static final String TAG = "ConversationListAdapter";
+    private final ItemClickListener itemClickListener;
     public ConversationListAdapter(@NonNull DiffUtil.ItemCallback<Conversation> diffCallback, ItemClickListener itemClickListener) {
         super(diffCallback);
         this.itemClickListener = itemClickListener;
@@ -40,10 +40,11 @@ public class ConversationListAdapter extends ListAdapter<Conversation, Conversat
     @Override
     public void onBindViewHolder(@NonNull ConversationViewHolder holder, int position) {
         Conversation conversation = getItem(position);
+        Log.e(TAG, "onBindViewHolder: "+ conversation.getUnreadMessageCount());
         holder.setBinding(conversation,itemClickListener);
     }
 
-    class ConversationViewHolder extends RecyclerView.ViewHolder{
+    public static class ConversationViewHolder extends RecyclerView.ViewHolder{
         private final RecyclerItemRowBinding binding;
         private static final String TAG = "ConversationViewHolder";
         public ConversationViewHolder(@NonNull View itemView) {
@@ -109,6 +110,16 @@ public class ConversationListAdapter extends ListAdapter<Conversation, Conversat
                     binding.status.setText("Tap to start conversation");
                 }
             }
+            binding.messageTime.setVisibility(View.VISIBLE);
+            binding.messageTime.setText(Helper.getTimeDate(conversation.getLastMessage().getSentAt()));
+            if(conversation.getUnreadMessageCount() > 0 ){
+                Log.e(TAG, "setBinding: "+conversation.getUnreadMessageCount());
+                binding.messageCount.setVisibility(View.VISIBLE);
+                String count = String.valueOf(conversation.getUnreadMessageCount());
+                binding.messageCount.setText(count);
+            }else{
+                binding.messageCount.setVisibility(View.GONE);
+            }
             binding.itemRow.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -116,5 +127,7 @@ public class ConversationListAdapter extends ListAdapter<Conversation, Conversat
                 }
             });
         }
+
     }
+
 }

@@ -7,6 +7,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,20 +28,25 @@ import com.example.cometchatprojava.chatActivity.ChatScreenActivity;
 import com.example.cometchatprojava.databinding.FragmentUserBinding;
 import com.example.cometchatprojava.databinding.RecyclerBinding;
 import com.example.cometchatprojava.databinding.RecyclerItemRowBinding;
+import com.example.cometchatprojava.databinding.SearchLayoutBinding;
 import com.example.cometchatprojava.diffUtil.DiffUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
-public class UserFragment extends Fragment implements ItemClickListener {
+public class UserFragment extends Fragment implements ItemClickListener, TextWatcher {
     private FragmentUserBinding binding;
     private RecyclerBinding subbinding;
+    private SearchLayoutBinding searchBinding;
     private UserListAdapter adapter;
     private static String uid;
+    private static final String TAG = "UserFragment";
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentUserBinding.bind(inflater.inflate(R.layout.fragment_user, container, false));
         subbinding =RecyclerBinding.bind(binding.getRoot());
+        searchBinding = SearchLayoutBinding.bind(binding.getRoot());
         return binding.getRoot();
     }
 
@@ -48,6 +56,8 @@ public class UserFragment extends Fragment implements ItemClickListener {
         adapter = new UserListAdapter(new DiffUtils<User>(),this);
         subbinding.recycler.setAdapter(adapter);
         uid = CometChat.getLoggedInUser().getUid();
+        searchBinding.search.addTextChangedListener(this);
+
     }
 
     private void getUsersList() {
@@ -90,4 +100,60 @@ public class UserFragment extends Fragment implements ItemClickListener {
         super.onResume();
         getUsersList();
     }
+
+    @Override
+    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        if(adapter != null && adapter.getCurrentList().size() >0){
+            if(charSequence.length() > 0){
+                String name = charSequence.toString();
+                List<User> searchList = new ArrayList<>();
+                if(charSequence.length() < 3){
+                    for(User user : adapter.getCurrentList()){
+                        if(user.getName().toLowerCase().contains(name.toLowerCase())){
+                            searchList.add(user);
+                        }
+                    }
+                    if(searchList.size()>0){
+                        Log.e(TAG, "onTextChanged: no empty called");
+                        adapter.submitList(searchList);
+                        adapter.notifyDataSetChanged();
+                    }
+
+                }else{
+                    Log.e(TAG, "onTextChanged: else called");
+                    UsersRequest usersRequest = new UsersRequest.UsersRequestBuilder().setSearchKeyword(name).build();
+                    usersRequest.fetchNext(new CometChat.CallbackListener<List<User>>() {
+                        @Override
+                        public void onSuccess(List<User> list) {
+                            Log.e(TAG, "onTextChanged: else called");
+                            if(list.size() > 0){
+                                adapter.submitList(list);
+                            }
+
+                        }
+
+                        @Override
+                        public void onError(CometChatException e) {
+                            Log.e(TAG, "onError: "+e.getMessage());
+                        }
+                    });
+                }
+
+            }else {
+                Log.e(TAG, "onTextChanged: called");
+                getUsersList();
+            }
+        }
+    }
+
+    @Override
+    public void afterTextChanged(Editable editable) {
+
+    }
+
 }

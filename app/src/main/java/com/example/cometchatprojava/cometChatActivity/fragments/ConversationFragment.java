@@ -1,5 +1,6 @@
 package com.example.cometchatprojava.cometChatActivity.fragments;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -9,6 +10,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,25 +36,32 @@ import com.example.cometchatprojava.R;
 import com.example.cometchatprojava.adapters.ConversationListAdapter;
 import com.example.cometchatprojava.adapters.ItemClickListener;
 import com.example.cometchatprojava.chatActivity.ChatScreenActivity;
+import com.example.cometchatprojava.cometChatActivity.CometChatActivity;
 import com.example.cometchatprojava.databinding.FragmentConversationBinding;
 import com.example.cometchatprojava.databinding.RecyclerBinding;
 import com.example.cometchatprojava.databinding.RecyclerItemRowBinding;
+import com.example.cometchatprojava.databinding.SearchLayoutBinding;
 import com.example.cometchatprojava.diffUtil.DiffUtils;
 import com.example.cometchatprojava.viewModels.ConversationViewModel;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-public class ConversationFragment extends Fragment implements ItemClickListener {
+public class ConversationFragment extends Fragment implements ItemClickListener, TextWatcher {
     private FragmentConversationBinding binding;
     private RecyclerBinding subbinding;
+    private SearchLayoutBinding searchBinding;
     private ConversationListAdapter adapter;
     private static String uid;
     private ConversationViewModel viewModel;
     private static final String TAG = "ConversationFragment";
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentConversationBinding.bind(inflater.inflate(R.layout.fragment_conversation, container, false));
         subbinding = RecyclerBinding.bind(binding.getRoot());
+        searchBinding = SearchLayoutBinding.bind(binding.getRoot());
         return binding.getRoot();
     }
 
@@ -59,20 +70,28 @@ public class ConversationFragment extends Fragment implements ItemClickListener 
         super.onViewCreated(view, savedInstanceState);
         adapter = new ConversationListAdapter(new DiffUtils<Conversation>(), this);
         subbinding.recycler.setAdapter(adapter);
+        searchBinding.search.addTextChangedListener(this);
         uid = CometChat.getLoggedInUser().getUid();
         viewModel = new ViewModelProvider(this).get(ConversationViewModel.class);
-        viewModel.getList().observe(getViewLifecycleOwner(), new Observer<List<Conversation>>() {
-            @Override
-            public void onChanged(List<Conversation> conversations) {
-                adapter.submitList(conversations);
-                adapter.notifyDataSetChanged();
+        viewModel.getList().observe(getViewLifecycleOwner(), conversations -> {
+            adapter.submitList(conversations);
+            adapter.notifyDataSetChanged();
+        });
+        viewModel.getUnreadCount().observe(getViewLifecycleOwner(),count ->{
+            Log.e(TAG, "onViewCreated: "+ count);
+            if(count > 0){
+                ((CometChatActivity) requireActivity()).getAllUnreadCount(count);
+            }else{
+                ((CometChatActivity) requireActivity()).removeBadge();
             }
         });
+
     }
 
-    private void getConversations() {
+    public void getConversations() {
         ConversationsRequest conversationsRequest = new ConversationsRequest.ConversationsRequestBuilder().setLimit(30).build();
         viewModel.fetConversations(conversationsRequest);
+
     }
 
     @Override
@@ -118,10 +137,11 @@ public class ConversationFragment extends Fragment implements ItemClickListener 
         removeCometChatListeners();
     }
 
-    private  void addCometChatListeners(){
+    public void addCometChatListeners(){
         CometChat.addMessageListener(TAG, new CometChat.MessageListener() {
             @Override
             public void onTextMessageReceived(TextMessage textMessage) {
+                Log.e(TAG, "onTextMessageReceivedConversation: "+textMessage);
                 updateConversations(textMessage);
             }
 
@@ -213,4 +233,47 @@ public class ConversationFragment extends Fragment implements ItemClickListener 
         CometChat.removeMessageListener(TAG);
         CometChat.removeGroupListener(TAG);
     }
+
+    @Override
+    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        if(adapter != null && adapter.getCurrentList().size() >0){
+            if(charSequence.length() > 0){
+                String characters = charSequence.toString();
+                List<Conversation> searchList = new ArrayList<>();
+                for(Conversation conversation : adapter.getCurrentList()){
+                    if(conversation.getConversationWith() instanceof  User){
+                        User user =(User) conversation.getConversationWith();
+                        if(user.getName().toLowerCase().contains(characters.toLowerCase())){
+                            searchList.add(conversation);
+                        }
+                    }else{
+                        Group group =(Group) conversation.getConversationWith();
+                        if(group.getName().toLowerCase().contains(characters.toLowerCase())){
+                            searchList.add(conversation);
+                        }
+                    }
+                }
+                if(searchList.size()>0){
+                    Log.e(TAG, "onTextChanged: no empty called");
+                    adapter.submitList(searchList);
+                    adapter.notifyDataSetChanged();
+                }
+            }else {
+                getConversations();
+            }
+        }
+
+    }
+
+    @Override
+    public void afterTextChanged(Editable editable) {
+
+    }
+
+    //private void
 }

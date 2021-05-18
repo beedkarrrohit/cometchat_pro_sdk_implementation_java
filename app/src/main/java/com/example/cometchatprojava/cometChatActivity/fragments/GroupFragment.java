@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,15 +29,18 @@ import com.example.cometchatprojava.chatActivity.ChatScreenActivity;
 import com.example.cometchatprojava.databinding.FragmentGroupBinding;
 import com.example.cometchatprojava.databinding.RecyclerBinding;
 import com.example.cometchatprojava.databinding.RecyclerItemRowBinding;
+import com.example.cometchatprojava.databinding.SearchLayoutBinding;
 import com.example.cometchatprojava.diffUtil.DiffUtils;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
-public class GroupFragment extends Fragment implements ItemClickListener {
+public class GroupFragment extends Fragment implements ItemClickListener, TextWatcher {
     private FragmentGroupBinding binding;
     private RecyclerBinding subbinding;
+    private SearchLayoutBinding searchBinding;
     private GroupListAdapter adapter;
     private static String uid;
     private static final String TAG = "GroupFragment";
@@ -43,6 +48,7 @@ public class GroupFragment extends Fragment implements ItemClickListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentGroupBinding.bind(inflater.inflate(R.layout.fragment_group, container, false));
         subbinding = RecyclerBinding.bind(binding.getRoot());
+        searchBinding = SearchLayoutBinding.bind(binding.getRoot());
         return binding.getRoot();
     }
 
@@ -51,6 +57,7 @@ public class GroupFragment extends Fragment implements ItemClickListener {
         super.onViewCreated(view, savedInstanceState);
         adapter = new GroupListAdapter(new DiffUtils<Group>(),this);
         subbinding.recycler.setAdapter(adapter);
+        searchBinding.search.addTextChangedListener(this);
         uid = CometChat.getLoggedInUser().getUid();
     }
 
@@ -140,5 +147,60 @@ public class GroupFragment extends Fragment implements ItemClickListener {
     public void onResume() {
         super.onResume();
         getAllGroups();
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        if(adapter != null && adapter.getCurrentList().size() >0){
+            if(charSequence.length() > 0){
+                String groupName = charSequence.toString();
+                List<Group> searchList= new ArrayList<>();
+                if(charSequence.length() < 3){
+                    for(Group group: adapter.getCurrentList()){
+                        if(group.getName().toLowerCase().contains(groupName.toLowerCase())){
+                            searchList.add(group);
+                        }
+                    }
+                    if(searchList.size() >0){
+                        Log.e(TAG, "onTextChanged: no empty called");
+                        adapter.submitList(searchList);
+                        adapter.notifyDataSetChanged();
+                    }
+
+                }else {
+                    searchGroup(groupName);
+                }
+            }else {
+                getAllGroups();
+            }
+        }
+    }
+
+    @Override
+    public void afterTextChanged(Editable editable) {
+
+    }
+
+    private void searchGroup(String name){
+        GroupsRequest groupsRequest = new GroupsRequest.GroupsRequestBuilder().setSearchKeyWord(name).build();
+        groupsRequest.fetchNext(new CometChat.CallbackListener<List<Group>>() {
+            @Override
+            public void onSuccess(List<Group> groups) {
+                if(groups != null && groups.size() > 0){
+                    adapter.submitList(groups);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onError(CometChatException e) {
+
+            }
+        });
     }
 }

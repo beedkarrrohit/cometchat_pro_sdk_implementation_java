@@ -6,12 +6,18 @@
         android:id="@+id/video_call"
         app:showAsAction="always"
         android:icon="@drawable/vidcam_drawable"
+        android:orderInCategory="100"
         />
     <item
         android:title="call"
         android:id="@+id/call"
         android:icon="@drawable/ic_round_call_24"
         app:showAsAction="always"
-
+        android:orderInCategory="101"
+        />
+    <item
+        android:title="leave"
+        android:id="@+id/leave"
+        android:orderInCategory="102"
         />
 </menu>
